@@ -1,4 +1,4 @@
-# traffic_control_2AGV
+# traffic_control_mutiple_AGV
 
 #### 環境依賴
 
@@ -7,7 +7,7 @@ C/C++ms-vscode.cpptools v1.5.0-insiders
 
 #### 部署步驟
 
-1. 開啟traffic_control_2AGV.cpp
+1. 開啟traffic_control_mutiple_AGV
 2. 地圖檔案:map.txt
     ![image-20210629091902964](C:\Users\88698\AppData\Roaming\Typora\typora-user-images\image-20210629091902964.png)
 3. 程式碼前方定義基本參數
