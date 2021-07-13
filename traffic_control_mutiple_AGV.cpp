@@ -5,9 +5,11 @@
 #include <math.h>
 #include <time.h>
 
+#define METHOD 1
+
 using namespace std;
-#define X_MAP 66
-#define Y_MAP 53
+// #define X_MAP 66
+// #define Y_MAP 53
 
 #define START_Y1 15
 #define START_X1 18
@@ -43,9 +45,10 @@ int getFilecol(string fileName)
     int count = 0;
     char c;
     c = file.peek();
+    
     if (!file.is_open())
         return -1;
-    while (('\n' != c) && (!file.eof()))
+    while (('\r' != c) && (!file.eof()))
     {
         file >> tmp;
         ++count;
@@ -54,6 +57,14 @@ int getFilecol(string fileName)
     file.close();
     return count;
 }
+class NODE{
+    public:
+        double start_t;
+        double  end_t;
+        int row;
+        int col; 
+        int mark;
+};
 
 class CPoint
 {
@@ -79,12 +90,12 @@ class CAStar
 {
 public:
     // 構造函數
-    CAStar(int array[Y_MAP][X_MAP])
+    CAStar(int *array, int X,int Y)
     {
-        for (int i = 0; i < Y_MAP; ++i)
-            for (int j = 0; j < X_MAP; ++j)
+        for (int i = 0; i < Y; ++i)
+            for (int j = 0; j < X; ++j)
             {
-                m_array[i][j] = array[i][j];
+                m_array[i][j] = *(array +i*X +j);
             }
     }
 
@@ -247,7 +258,7 @@ public:
     }
 
 private:
-    int m_array[Y_MAP][X_MAP];
+    int m_array[1000][1000];
     static const int STEP = 10;
     static const int OBLIQUE = 14;
 
@@ -258,6 +269,7 @@ private:
 
 int main()
 {
+    cout<<"auto find the size of txt"<<endl;
     int num_node = 0;
     int method = 0;
     int sx_1, sy_1, ex_1, ey_1;
@@ -265,16 +277,16 @@ int main()
     // input the map
     int X = 0;
     int Y = 0;
+    string filename{"clear_map.txt"};
     double start_t, end_t;
     start_t = clock();
-    string filename{"clear_map.txt"};
-    Y = getFilerow(filename);
     X = getFilecol(filename);
-    cout << "Y" << Y << endl;
+    Y = getFilerow(filename);
     cout << "X" << X << endl;
-    
-    int array[Y_MAP][X_MAP]{};
+    cout << "Y" << Y << endl;
 
+    int array[Y][X]{};
+    //input the file
     ifstream file{"clear_map.txt"};
     if (!file.is_open())
         cout << "can't open file" << endl;
@@ -287,7 +299,7 @@ int main()
         }
     }
     file.close();
-
+    // show the map
     for (int i = 0; i < Y; i++)
     {
         for (int j = 0; j < X; j++)
@@ -299,7 +311,6 @@ int main()
         }
         cout << " " << i << endl;
     }
-
     for (int j = 0; j < X; j++)
     {
         if (j % 5 == 0)
@@ -307,6 +318,32 @@ int main()
             cout << j;
             cout << "   ";
         }
+    }
+    //array convert to map
+
+    NODE temp;
+
+    vector<NODE> row;
+    row.assign(X,temp);//配置一個 row 的大小
+    vector< vector<NODE> > map;
+    map.assign(Y,row);//配置2維
+
+    cout<<"2D"<<endl;
+    for(int i=0; i<Y; i++)
+    {
+        for(int j=0; j<X; j++)
+        {
+            NODE temp;
+            temp.start_t = 0;
+            temp.end_t = 0;
+            temp.row = i;
+            temp.col = j;
+            temp.mark = array[i][j];
+            map[i][j] = temp;
+            cout<<map[i][j].row<<":"<<map[i][j].col<<" ";
+
+        }
+        cout<<endl;
     }
 
     cout << endl;
@@ -340,7 +377,7 @@ int main()
     // ex_2 = 60;
     // ey_2 = 41;
     // two AGV setting
-    CAStar *pAStar_AGV1 = new CAStar(array);
+    CAStar *pAStar_AGV1 = new CAStar(*array, X, Y);
     CPoint *start_AGV1 = new CPoint(sy_1, sx_1);
     CPoint *end_AGV1 = new CPoint(ey_1, ex_1);
     CPoint *point_AGV1 = pAStar_AGV1->FindPath(start_AGV1, end_AGV1, false);
@@ -349,7 +386,7 @@ int main()
 
     CPoint *start_AGV2 = new CPoint(sy_2, sx_2);
     CPoint *end_AGV2 = new CPoint(ey_2, ex_2);
-    CAStar *pAStar_AGV2 = new CAStar(array);
+    CAStar *pAStar_AGV2 = new CAStar(*array, X, Y);
     CPoint *point_AGV2 = pAStar_AGV2->FindPath(start_AGV2, end_AGV2, false);
     CPoint *head_AGV2 = new CPoint(START_Y2, START_X2);
     head_AGV2->m_parentPoint = point_AGV2;
@@ -372,7 +409,7 @@ int main()
         array[sy_1][sx_1] = 3;
         array[ey_1][ex_1] = 4;
 
-        CAStar *pAStar_AGV2_alter = new CAStar(array);
+        CAStar *pAStar_AGV2_alter = new CAStar(*array,X ,Y);
         point_AGV2 = pAStar_AGV2_alter->FindPath(start_AGV2, end_AGV2, false);
 
         num_node = 0;
@@ -540,8 +577,6 @@ int main()
         }
     }
     }
-    end_t=clock();
-    printf("%d ms", end_t-start_t);
     system("pause");
     return 0;
 }
