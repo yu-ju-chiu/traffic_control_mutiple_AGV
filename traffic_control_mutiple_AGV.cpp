@@ -10,7 +10,7 @@
 using namespace std;
 // #define X_MAP 66
 // #define Y_MAP 53
-
+#define NODE_TIME 1
 #define START_Y1 15
 #define START_X1 18
 #define END_Y1 10
@@ -64,12 +64,13 @@ class NODE{
         int row;
         int col; 
         int mark;
+        int agv;
 };
 
 class CPoint
 {
 public:
-    CPoint(int x, int y) : X(x), Y(y), G(0), H(0), F(0), m_parentPoint(NULL), time(0){};
+    CPoint(int x, int y) : X(x), Y(y), G(0), H(0), F(0), m_parentPoint(NULL){};
     ~CPoint(){};
 
     void CalcF()
@@ -82,7 +83,8 @@ public:
     int G;
     int H;
     int F;
-    int time;
+    int n_start_t;
+    int n_end_t;
     CPoint *m_parentPoint;
 };
 
@@ -90,12 +92,12 @@ class CAStar
 {
 public:
     // 構造函數
-    CAStar(int *array, int X,int Y)
+    CAStar(int array[1000][1000], int X,int Y)
     {
         for (int i = 0; i < Y; ++i)
             for (int j = 0; j < X; ++j)
             {
-                m_array[i][j] = *(array +i*X +j);
+                m_array[i][j] = array[i][j];
             }
     }
 
@@ -272,20 +274,22 @@ int main()
     cout<<"auto find the size of txt"<<endl;
     int num_node = 0;
     int method = 0;
+    int num = 0;
     int sx_1, sy_1, ex_1, ey_1;
     int sx_2, sy_2, ex_2, ey_2;
+    double clock = 0;
+    double agv_clock;
     // input the map
     int X = 0;
     int Y = 0;
     string filename{"clear_map.txt"};
     double start_t, end_t;
-    start_t = clock();
     X = getFilecol(filename);
     Y = getFilerow(filename);
     cout << "X" << X << endl;
     cout << "Y" << Y << endl;
 
-    int array[Y][X]{};
+    int array[1000][1000]{};
     //input the file
     ifstream file{"clear_map.txt"};
     if (!file.is_open())
@@ -320,15 +324,11 @@ int main()
         }
     }
     //array convert to map
-
     NODE temp;
-
     vector<NODE> row;
     row.assign(X,temp);//配置一個 row 的大小
     vector< vector<NODE> > map;
     map.assign(Y,row);//配置2維
-
-    cout<<"2D"<<endl;
     for(int i=0; i<Y; i++)
     {
         for(int j=0; j<X; j++)
@@ -340,242 +340,76 @@ int main()
             temp.col = j;
             temp.mark = array[i][j];
             map[i][j] = temp;
-            cout<<map[i][j].row<<":"<<map[i][j].col<<" ";
-
         }
-        cout<<endl;
     }
-
     cout << endl;
-    cout << "method(Alternative:1/Waiting:2)" << endl;
-    cin >> method;
-    cout << endl;
-    cout << "enter AGV1 start X" << endl;
-    cin >> sx_1;
-    cout << "enter AGV1 start y" << endl;
-    cin >> sy_1;
-    cout << "enter AGV1 end x" << endl;
-    cin >> ex_1;
-    cout << "enter AGV1 end y" << endl;
-    cin >> ey_1;
+    cout << "the number of the car" << endl;
+    cin >> num;
 
-    cout << "enter AGV2 start x" << endl;
-    cin >> sx_2;
-    cout << "enter AGV2 start y" << endl;
-    cin >> sy_2;
-    cout << "enter AGV2 end x" << endl;
-    cin >> ex_2;
-    cout << "enter AGV2 end y" << endl;
-    cin >> ey_2;
     // method = 1;
-    // sx_1 = 5;
-    // sy_1 = 50;
-    // ex_1 = 4;
-    // ey_1 = 46;
+    // sx_1 = 58;
+    // sy_1 = 48;
+    // ex_1 = 61;
+    // ey_1 = 45;
     // sx_2 = 60;
     // sy_2 = 48;
     // ex_2 = 60;
     // ey_2 = 41;
     // two AGV setting
-    CAStar *pAStar_AGV1 = new CAStar(*array, X, Y);
-    CPoint *start_AGV1 = new CPoint(sy_1, sx_1);
-    CPoint *end_AGV1 = new CPoint(ey_1, ex_1);
-    CPoint *point_AGV1 = pAStar_AGV1->FindPath(start_AGV1, end_AGV1, false);
-    CPoint *head_AGV1 = new CPoint(START_Y1, START_X1);
-    head_AGV1->m_parentPoint = point_AGV1;
-
-    CPoint *start_AGV2 = new CPoint(sy_2, sx_2);
-    CPoint *end_AGV2 = new CPoint(ey_2, ex_2);
-    CAStar *pAStar_AGV2 = new CAStar(*array, X, Y);
-    CPoint *point_AGV2 = pAStar_AGV2->FindPath(start_AGV2, end_AGV2, false);
-    CPoint *head_AGV2 = new CPoint(START_Y2, START_X2);
-    head_AGV2->m_parentPoint = point_AGV2;
-
-    switch (method)
+    for(int k = 1 ; k<=num;k++)
     {
-    case 1: //alternative way
-    {
-        num_node = 0;
-        while (point_AGV1 != NULL)
+        cout << "enter AGV"<<k<<"start X" << endl;
+        cin >> sx_1;
+        cout << "enter AGV"<<k<<"start Y" << endl;
+        cin >> sy_1;
+        cout << "enter AGV"<<k<<"end X" << endl;
+        cin >> ex_1;
+        cout << "enter AGV"<<k<<"end Y" << endl;
+        cin >> ey_1;
+        if (k>1)
         {
-            cout << "AGV1:"
-                 << "(" << point_AGV1->X << "," << point_AGV1->Y << ");" << std::endl;
-            array[point_AGV1->X][point_AGV1->Y] = 2;
-            point_AGV1->time++;
-            point_AGV1 = point_AGV1->m_parentPoint;
-            num_node++;
-        }
-        cout << "AGV2_num_node:" << num_node << endl;
-        array[sy_1][sx_1] = 3;
-        array[ey_1][ex_1] = 4;
-
-        CAStar *pAStar_AGV2_alter = new CAStar(*array,X ,Y);
-        point_AGV2 = pAStar_AGV2_alter->FindPath(start_AGV2, end_AGV2, false);
-
-        num_node = 0;
-        while (point_AGV2 != NULL)
-        {
-            cout << "AGV2:"
-                 << "(" << point_AGV2->X << "," << point_AGV2->Y << ");" << endl;
-            array[point_AGV2->X][point_AGV2->Y] = 2;
-            point_AGV2->time++;
-            point_AGV2 = point_AGV2->m_parentPoint;
-            num_node++;
-        }
-        cout << "AGV2_num_node:" << num_node << endl;
-        array[sy_2][sx_2] = 5;
-        array[ey_2][ex_2] = 6;
-
-        for (int i = 0; i < Y; i++)
-        {
-            for (int j = 0; j < X; j++)
-            {
-                if (array[i][j] == 1)
-                    cout << "X";
-                else if (array[i][j] == 2)
-                    cout << "+";
-                else if (array[i][j] == 3)
-                    cout << "S";
-                else if (array[i][j] == 4)
-                    cout << "E";
-                else if (array[i][j] == 5)
-                    cout << "S";
-                else if (array[i][j] == 6)
-                    cout << "E";
-                else
-                    cout << " ";
-            }
-            cout << endl;
-        }
-        break;
-    }
-    case 2: //waiting way
-    {
-        point_AGV1 = head_AGV1->m_parentPoint;
-        point_AGV2 = head_AGV2->m_parentPoint;
-
-        while (point_AGV2->m_parentPoint != NULL && point_AGV1->m_parentPoint != NULL)
-        {
-            if (point_AGV1->m_parentPoint->X == point_AGV2->m_parentPoint->X && point_AGV1->m_parentPoint->Y == point_AGV2->m_parentPoint->Y)
-            {
-                CPoint *temp_point = new CPoint(point_AGV2->X, point_AGV2->Y);
-                temp_point->m_parentPoint = point_AGV2->m_parentPoint;
-                point_AGV2->m_parentPoint = temp_point;
-            }
-            point_AGV1 = point_AGV1->m_parentPoint;
-            point_AGV2 = point_AGV2->m_parentPoint;
+            cout << "start time ?(s))"<< endl;
+            cin >> agv_clock;       
         }
 
-        point_AGV1 = head_AGV1->m_parentPoint;
-        point_AGV2 = head_AGV2->m_parentPoint;
+        CAStar *pAStar = new CAStar( array, X, Y);
+        CPoint *start = new CPoint(sy_1, sx_1);
+        CPoint *end = new CPoint(ey_1, ex_1);
+        CPoint *point = pAStar->FindPath(start, end, false);
+        CPoint *head = new CPoint(sy_1, sx_1);
+        head->m_parentPoint = point;
+        point->n_start_t = agv_clock;
+        clock = point->n_start_t;
 
         num_node = 0;
-        while (point_AGV2 != NULL)
+        while (point != NULL)
         {
-            cout << "AGV2:"
-                 << "(" << point_AGV2->X << "," << point_AGV2->Y << ");" << endl;
-            array[point_AGV2->X][point_AGV2->Y] = 2;
-            point_AGV2 = point_AGV2->m_parentPoint;
+            cout << "AGV:"<< k 
+                 << "(" << point->X << "," << point->Y << ");" << "//";
+            map[point->X][point->Y].agv = k;
+            array[point->X][point->Y] = 2;
+            point->n_start_t = clock;
+            clock = clock+NODE_TIME;
+            point->n_end_t = clock;
+            cout << "time:"
+                 << "(" << point->n_start_t << "," << point->n_end_t << ");" << endl;
+            point = point->m_parentPoint;
             num_node++;
-        }
-        cout << "AGV2_num_node:" << num_node << endl;
-        array[sy_2][sx_2] = 5;
-        array[ey_2][ex_2] = 6;
-
-        num_node = 0;
-        while (point_AGV1 != NULL)
-        {
-            cout << "AGV1:"
-                 << "(" << point_AGV1->X << "," << point_AGV1->Y << ");" << endl;
-            array[point_AGV1->X][point_AGV1->Y] = 2;
-            point_AGV1 = point_AGV1->m_parentPoint;
-            num_node++;
-        }
-        cout << "AGV1_num_node:" << num_node << endl;
-        array[sy_1][sx_1] = 3;
-        array[ey_1][ex_1] = 4;
-
-        for (int i = 0; i < Y; i++)
-        {
-            for (int j = 0; j < X; j++)
-            {
-                if (array[i][j] == 1)
-                    cout << "X";
-                else if (array[i][j] == 2)
-                    cout << "+";
-                else if (array[i][j] == 3)
-                    cout << "S";
-                else if (array[i][j] == 4)
-                    cout << "E";
-                else if (array[i][j] == 5)
-                    cout << "S";
-                else if (array[i][j] == 6)
-                    cout << "E";
-                else
-                    cout << " ";
-            }
-            cout << endl;
-        }
-
-        break;
-    }
-    default: //waiting way
-    {
-        point_AGV1 = head_AGV1->m_parentPoint;
-        point_AGV2 = head_AGV2->m_parentPoint;
-
-        while (point_AGV2->m_parentPoint != NULL && point_AGV1->m_parentPoint != NULL)
-        {
-            if (point_AGV1->m_parentPoint->X == point_AGV2->m_parentPoint->X && point_AGV1->m_parentPoint->Y == point_AGV2->m_parentPoint->Y)
-            {
-                CPoint *temp_point = new CPoint(point_AGV2->X, point_AGV2->Y);
-                temp_point->m_parentPoint = point_AGV2->m_parentPoint;
-                point_AGV2->m_parentPoint = temp_point;
-            }
-            point_AGV1 = point_AGV1->m_parentPoint;
-            point_AGV2 = point_AGV2->m_parentPoint;
-        }
-
-        point_AGV1 = head_AGV1->m_parentPoint;
-        point_AGV2 = head_AGV2->m_parentPoint;
-
-        num_node = 0;
-        while (point_AGV2 != NULL)
-        {
-            cout << "AGV2:"
-                 << "(" << point_AGV2->X << "," << point_AGV2->Y << ");" << endl;
-            array[point_AGV2->X][point_AGV2->Y] = 2;
-            point_AGV2 = point_AGV2->m_parentPoint;
-            num_node++;
-        }
-        cout << "AGV2_num_node:" << num_node << endl;
-
-        num_node = 0;
-        while (point_AGV1 != NULL)
-        {
-            cout << "AGV1:"
-                 << "(" << point_AGV1->X << "," << point_AGV1->Y << ");" << endl;
-            array[point_AGV1->X][point_AGV1->Y] = 2;
-            point_AGV1 = point_AGV1->m_parentPoint;
-            num_node++;
-        }
-        cout << "AGV1_num_node:" << num_node << endl;
-        break;
-
-        for (int i = 0; i < Y; i++)
-        {
-            for (int j = 0; j < X; j++)
-            {
-                if (array[i][j] == 1)
-                    cout << "X";
-                else if (array[i][j] == 2)
-                    cout << "-";
-                else
-                    cout << " ";
-            }
-            cout << endl;
         }
     }
+
+    for (int i = 0; i < Y; i++)
+    {
+        for (int j = 0; j < X; j++)
+        {
+            if (map[i][j].mark == 1)
+                cout << "X";
+            else if (map[i][j].agv != NULL)
+                cout << map[i][j].agv;
+            else
+                cout << " ";
+        }
+        cout << endl;
     }
     system("pause");
     return 0;
