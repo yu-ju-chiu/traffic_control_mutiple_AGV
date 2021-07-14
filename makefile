@@ -1,5 +1,5 @@
 all:traffic_control_mutiple_AGV.cpp
-	traffic_control_mutiple_AGV.cpp  -o  traffic_control_mutiple_AGV.out
+	g++ traffic_control_mutiple_AGV.cpp  -o  traffic_control_mutiple_AGV.out
 
 .PHONY:clean
 clean:
