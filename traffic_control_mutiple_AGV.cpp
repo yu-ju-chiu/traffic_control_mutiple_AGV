@@ -75,14 +75,15 @@ public:
 
     void CalcF()
     {
-        F = G + H;
-        // cout << "F: " << F << endl;
+        F = G + H + T;
+        cout << "F: " << F << endl;
     }
     int X;
     int Y;
     int G;
     int H;
     int F;
+    int T;
     int n_start_t;
     int n_end_t;
     CPoint *m_parentPoint;
@@ -92,14 +93,23 @@ class CAStar
 {
 public:
     // 構造函數
-    CAStar(int array[1000][1000], int X,int Y)
+    CAStar(vector< vector<NODE> > &map, int X,int Y)
     {
         for (int i = 0; i < Y; ++i)
             for (int j = 0; j < X; ++j)
             {
-                m_array[i][j] = array[i][j];
+                m_array[i][j] = map[i][j];
             }
     }
+
+    // CAStar(int array[1000][1000], int X,int Y)
+    // {
+    //     for (int i = 0; i < Y; ++i)
+    //         for (int j = 0; j < X; ++j)
+    //         {
+    //             m_array[i][j] = array[i][j];
+    //         }
+    // }
 
     CPoint *GetMinFPoint()
     {
@@ -203,6 +213,7 @@ public:
     {
         point->m_parentPoint = tmpStart;
         point->G = CalcG(tmpStart, point);
+        point->T = CalcT(tmpStart, point);
         point->H = CalcH(end, point);
         point->CalcF();
         m_openVec.push_back(point);
@@ -215,6 +226,21 @@ public:
         int parentG = point->m_parentPoint != NULL ? point->m_parentPoint->G : 0;
         // cout << "G + parentG: " << G + parentG << endl;
         return G + parentG;
+    }
+
+    int CalcT(CPoint *start, CPoint *point,vector< vector<NODE> > &map)
+    {
+        int T = 0;
+        if (abs(point->n_start_t - map[point->X][point->Y].start_t) <= 5)
+        {
+            T = 9999; 
+        }
+        else if(abs(point->n_end_t - map[point->X][point->Y].end_t) <= 5)
+        {
+            T = 9999;
+        }
+        return T;
+
     }
 
     int CalcH(CPoint *end, CPoint *point)
@@ -282,7 +308,7 @@ int main()
     // input the map
     int X = 0;
     int Y = 0;
-    string filename{"clear_map.txt"};
+    string filename{"factory_map.txt"};
     double start_t, end_t;
     X = getFilecol(filename);
     Y = getFilerow(filename);
@@ -291,7 +317,7 @@ int main()
 
     int array[1000][1000]{};
     //input the file
-    ifstream file{"clear_map.txt"};
+    ifstream file{"factory_map.txt"};
     if (!file.is_open())
         cout << "can't open file" << endl;
 
@@ -346,16 +372,6 @@ int main()
     cout << "the number of the car" << endl;
     cin >> num;
 
-    // method = 1;
-    // sx_1 = 58;
-    // sy_1 = 48;
-    // ex_1 = 61;
-    // ey_1 = 45;
-    // sx_2 = 60;
-    // sy_2 = 48;
-    // ex_2 = 60;
-    // ey_2 = 41;
-    // two AGV setting
     for(int k = 1 ; k<=num;k++)
     {
         cout << "enter AGV"<<k<<"start X" << endl;
@@ -372,7 +388,7 @@ int main()
             cin >> agv_clock;       
         }
 
-        CAStar *pAStar = new CAStar( array, X, Y);
+        CAStar *pAStar = new CAStar( map, X, Y);
         CPoint *start = new CPoint(sy_1, sx_1);
         CPoint *end = new CPoint(ey_1, ex_1);
         CPoint *point = pAStar->FindPath(start, end, false);
