@@ -59,6 +59,8 @@ int getFilecol(string fileName)
 }
 class NODE{
     public:
+        NODE() : start_t(0), end_t(0), row(0), col(0), mark(0),agv(0){};
+        ~NODE(){};
         double start_t;
         double  end_t;
         int row;
@@ -70,13 +72,15 @@ class NODE{
 class CPoint
 {
 public:
-    CPoint(int x, int y) : X(x), Y(y), G(0), H(0), F(0), m_parentPoint(NULL){};
+    CPoint(int x, int y) : X(x), Y(y), G(0), H(0), F(0),T(0),n_start_t(0),n_end_t(0), m_parentPoint(NULL){};
     ~CPoint(){};
-
     void CalcF()
     {
         F = G + H + T;
         cout << "F: " << F << endl;
+        cout << "G: " << G << endl;
+        cout << "H: " << H << endl;
+        cout << "T: " << T << endl;
     }
     int X;
     int Y;
@@ -95,10 +99,15 @@ public:
     // 構造函數
     CAStar(vector< vector<NODE> > &map, int X,int Y)
     {
+        NODE temp;
+        vector<NODE> row;
+        row.assign(1000,temp);//配置一個 row 的大小
+        m_map.assign(1000,row);//配置2維
+
         for (int i = 0; i < Y; ++i)
             for (int j = 0; j < X; ++j)
             {
-                m_array[i][j] = map[i][j];
+                m_map[i][j] = map[i][j];
             }
     }
 
@@ -113,7 +122,7 @@ public:
 
     CPoint *GetMinFPoint()
     {
-        int idx = 0, valueF = 9999;
+        int idx = 0, valueF = 99999;
         for (int i = 0; i < m_openVec.size(); i++)
         {
             if (m_openVec[i]->F < valueF)
@@ -140,7 +149,7 @@ public:
 
     bool canReach(int x, int y)
     {
-        return 0 == m_array[x][y];
+        return 0 == m_map[x][y].mark;
     }
 
     bool IsAccessiblePoint(CPoint *point, int x, int y, bool isIgnoreCorner)
@@ -213,7 +222,7 @@ public:
     {
         point->m_parentPoint = tmpStart;
         point->G = CalcG(tmpStart, point);
-        point->T = CalcT(tmpStart, point);
+        point->T = CalcT(point);
         point->H = CalcH(end, point);
         point->CalcF();
         m_openVec.push_back(point);
@@ -228,14 +237,14 @@ public:
         return G + parentG;
     }
 
-    int CalcT(CPoint *start, CPoint *point,vector< vector<NODE> > &map)
+    int CalcT(CPoint *point)
     {
         int T = 0;
-        if (abs(point->n_start_t - map[point->X][point->Y].start_t) <= 5)
+        if (abs(point->n_start_t - m_map[point->X][point->Y].start_t) <= 5)
         {
             T = 9999; 
         }
-        else if(abs(point->n_end_t - map[point->X][point->Y].end_t) <= 5)
+        else if(abs(point->n_end_t - m_map[point->X][point->Y].end_t) <= 5)
         {
             T = 9999;
         }
@@ -286,7 +295,8 @@ public:
     }
 
 private:
-    int m_array[1000][1000];
+    // int m_array[1000][1000];
+    vector< vector<NODE> > m_map;
     static const int STEP = 10;
     static const int OBLIQUE = 14;
 
