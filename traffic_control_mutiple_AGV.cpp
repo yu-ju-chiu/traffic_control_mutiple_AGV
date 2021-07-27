@@ -11,15 +11,15 @@ using namespace std;
 // #define X_MAP 66
 // #define Y_MAP 53
 #define NODE_TIME 1
-#define START_Y1 15
-#define START_X1 18
-#define END_Y1 10
-#define END_X1 31
+// #define START_Y1 15
+// #define START_X1 18
+// #define END_Y1 10
+// #define END_X1 31
 
-#define START_Y2 18
-#define START_X2 21
-#define END_Y2 12
-#define END_X2 33
+// #define START_Y2 18
+// #define START_X2 21
+// #define END_Y2 12
+// #define END_X2 33
 
 int getFilerow(string fileName)
 {
@@ -108,17 +108,9 @@ public:
             for (int j = 0; j < X; ++j)
             {
                 m_map[i][j] = map[i][j];
+                // cout<<"m_map.start_time:" << m_map[i][j].start_t<<endl;
             }
     }
-
-    // CAStar(int array[1000][1000], int X,int Y)
-    // {
-    //     for (int i = 0; i < Y; ++i)
-    //         for (int j = 0; j < X; ++j)
-    //         {
-    //             m_array[i][j] = array[i][j];
-    //         }
-    // }
 
     CPoint *GetMinFPoint()
     {
@@ -207,22 +199,26 @@ public:
         return false;
     }
 
-    void RefreshPoint(CPoint *tmpStart, CPoint *point)
+    void RefreshPoint(CPoint *tmpStart, CPoint *point, int start_time)
     {
         int valueG = CalcG(tmpStart, point);
         if (valueG < point->G)
         {
             point->m_parentPoint = tmpStart;
+            point->n_start_t = start_time;
+            point->n_end_t = start_time+NODE_TIME;
             point->G = valueG;
             point->CalcF();
         }
     }
 
-    void NotFoundPoint(CPoint *tmpStart, CPoint *end, CPoint *point)
+    void NotFoundPoint(vector< vector<NODE> > &map,CPoint *tmpStart, CPoint *end, CPoint *point,int start_time)
     {
         point->m_parentPoint = tmpStart;
+        point->n_start_t = start_time;
+        point->n_end_t = start_time+NODE_TIME;
         point->G = CalcG(tmpStart, point);
-        point->T = CalcT(point);
+        point->T = CalcT(map,point);
         point->H = CalcH(end, point);
         point->CalcF();
         m_openVec.push_back(point);
@@ -237,17 +233,19 @@ public:
         return G + parentG;
     }
 
-    int CalcT(CPoint *point)
+    int CalcT(vector< vector<NODE> > &map,CPoint *point)
     {
         int T = 0;
-        if (abs(point->n_start_t - m_map[point->X][point->Y].start_t) <= 5)
+        if (abs(point->n_start_t - map[point->X][point->Y].start_t) <= 1)
         {
             T = 9999; 
         }
-        else if(abs(point->n_end_t - m_map[point->X][point->Y].end_t) <= 5)
+        else if(abs(point->n_end_t - map[point->X][point->Y].end_t) <= 1)
         {
             T = 9999;
         }
+        cout << "CalcT_point_start: " <<"("<< point->X <<","<< point->Y<<")"<< point->n_start_t << endl;
+        cout << "CalcT_map_start: " <<"("<< point->X <<","<< point->Y<<")"<< map[point->X][point->Y].start_t << endl;
         return T;
 
     }
@@ -260,7 +258,7 @@ public:
     }
 
     // 搜索路徑
-    CPoint *FindPath(CPoint *start, CPoint *end, bool isIgnoreCorner)
+    CPoint *FindPath(vector< vector<NODE> > &map,CPoint *start, CPoint *end, bool isIgnoreCorner,int start_time)
     {
         m_openVec.push_back(start);
         while (0 != m_openVec.size())
@@ -274,13 +272,13 @@ public:
             {
                 CPoint *point = *it;
                 if (isInOpenVec(point->X, point->Y)) // 在開啟列表
-                    RefreshPoint(tmpStart, point);
+                    RefreshPoint(tmpStart, point, start_time);
                 //else if(inCloseVec(point))
                 //{
                 // 檢查節點的g值，如果新計算得到的路徑開銷比該g值低，那麼要重新打開該節點（即重新放入OPEN集）
                 //}
                 else
-                    NotFoundPoint(tmpStart, end, point);
+                    NotFoundPoint(map,tmpStart, end, point,start_time);
             }
             if (isInOpenVec(end->X, end->Y)) // 目標點已在開啟列表中
             {
@@ -290,6 +288,7 @@ public:
                         return m_openVec[i];
                 }
             }
+            start_time = start_time + NODE_TIME;
         }
         return end;
     }
@@ -313,8 +312,6 @@ int main()
     int num = 0;
     int sx_1, sy_1, ex_1, ey_1;
     int sx_2, sy_2, ex_2, ey_2;
-    double clock = 0;
-    double agv_clock;
     // input the map
     int X = 0;
     int Y = 0;
@@ -381,46 +378,51 @@ int main()
     cout << endl;
     cout << "the number of the car" << endl;
     cin >> num;
+    int start_time = 0;
+    int wait_time = 0;
 
     for(int k = 1 ; k<=num;k++)
     {
         cout << "enter AGV"<<k<<"start X" << endl;
-        cin >> sx_1;
-        cout << "enter AGV"<<k<<"start Y" << endl;
-        cin >> sy_1;
-        cout << "enter AGV"<<k<<"end X" << endl;
         cin >> ex_1;
-        cout << "enter AGV"<<k<<"end Y" << endl;
+        cout << "enter AGV"<<k<<"start Y" << endl;
         cin >> ey_1;
+        cout << "enter AGV"<<k<<"end X" << endl;
+        cin >> sx_1;
+        cout << "enter AGV"<<k<<"end Y" << endl;
+        cin >> sy_1;
         if (k>1)
         {
+            start_time = 0 + wait_time;
             cout << "start time ?(s))"<< endl;
-            cin >> agv_clock;       
+            cin >> wait_time;    
+            start_time = start_time + wait_time;   
         }
 
         CAStar *pAStar = new CAStar( map, X, Y);
         CPoint *start = new CPoint(sy_1, sx_1);
         CPoint *end = new CPoint(ey_1, ex_1);
-        CPoint *point = pAStar->FindPath(start, end, false);
+        CPoint *point = pAStar->FindPath(map,start, end, false, start_time);
         CPoint *head = new CPoint(sy_1, sx_1);
         head->m_parentPoint = point;
-        point->n_start_t = agv_clock;
-        clock = point->n_start_t;
+        point->n_start_t = start_time;
+        point->n_end_t = start_time+NODE_TIME;
 
         num_node = 0;
+        
         while (point != NULL)
         {
             cout << "AGV:"<< k 
-                 << "(" << point->X << "," << point->Y << ");" << "//";
+                 << "(" << point->Y << "," << point->X << ");" << "//";
             map[point->X][point->Y].agv = k;
-            array[point->X][point->Y] = 2;
-            point->n_start_t = clock;
-            clock = clock+NODE_TIME;
-            point->n_end_t = clock;
+            map[point->X][point->Y].start_t = start_time;
+            map[point->X][point->Y].end_t = start_time+ NODE_TIME;
+
             cout << "time:"
-                 << "(" << point->n_start_t << "," << point->n_end_t << ");" << endl;
+                 << "(" << map[point->X][point->Y].start_t << "," << map[point->X][point->Y].end_t << ");" << endl;
             point = point->m_parentPoint;
             num_node++;
+            start_time = start_time+ NODE_TIME;
         }
     }
 
