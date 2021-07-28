@@ -11,6 +11,7 @@ using namespace std;
 // #define X_MAP 66
 // #define Y_MAP 53
 #define NODE_TIME 1
+#define STAY_TIME 9999
 // #define START_Y1 15
 // #define START_X1 18
 // #define END_Y1 10
@@ -202,11 +203,12 @@ public:
     void RefreshPoint(CPoint *tmpStart, CPoint *point, int start_time)
     {
         int valueG = CalcG(tmpStart, point);
+        // start_time = start_time+NODE_TIME;
         if (valueG < point->G)
         {
             point->m_parentPoint = tmpStart;
-            point->n_start_t = start_time;
-            point->n_end_t = start_time+NODE_TIME;
+            // point->n_start_t = start_time;
+            // point->n_end_t = start_time+NODE_TIME;
             point->G = valueG;
             point->CalcF();
         }
@@ -214,6 +216,7 @@ public:
 
     void NotFoundPoint(vector< vector<NODE> > &map,CPoint *tmpStart, CPoint *end, CPoint *point,int start_time)
     {
+        start_time = start_time+NODE_TIME;
         point->m_parentPoint = tmpStart;
         point->n_start_t = start_time;
         point->n_end_t = start_time+NODE_TIME;
@@ -236,20 +239,18 @@ public:
     int CalcT(vector< vector<NODE> > &map,CPoint *point)
     {
         int T = 0;
-        if (abs(point->n_start_t - map[point->X][point->Y].start_t) <= 1)
+        if (abs(point->n_start_t - map[point->X][point->Y].start_t) < 1)
         {
             T = 9999; 
         }
-        else if(abs(point->n_end_t - map[point->X][point->Y].end_t) <= 1)
+        else if(abs(point->n_end_t - map[point->X][point->Y].end_t) < 1)
         {
             T = 9999;
         }
         cout << "CalcT_point_start: " <<"("<< point->X <<","<< point->Y<<")"<< point->n_start_t << endl;
         cout << "CalcT_map_start: " <<"("<< point->X <<","<< point->Y<<")"<< map[point->X][point->Y].start_t << endl;
         return T;
-
     }
-
     int CalcH(CPoint *end, CPoint *point)
     {
         double step = sqrt(pow(abs(point->X - end->X), 2) + pow(abs(point->Y - end->Y), 2));
@@ -264,9 +265,11 @@ public:
         while (0 != m_openVec.size())
         {
             CPoint *tmpStart = GetMinFPoint(); // 取F最小值
+
             RemoveFromOpenVec(tmpStart);
             m_closeVec.push_back(tmpStart);
-
+            map[tmpStart->X][tmpStart->Y].start_t = start_time;
+            map[tmpStart->X][tmpStart->Y].end_t = start_time + NODE_TIME;
             POINTVEC adjacentPoints = GetAdjacentPoints(tmpStart, isIgnoreCorner);
             for (POINTVEC::iterator it = adjacentPoints.begin(); it != adjacentPoints.end(); ++it)
             {
@@ -285,16 +288,25 @@ public:
                 for (int i = 0; i < m_openVec.size(); ++i)
                 {
                     if (end->X == m_openVec[i]->X && end->Y == m_openVec[i]->Y)
+                    {
+                        start_time = start_time + NODE_TIME;
+                        map[end->X][end->Y].start_t = start_time;
+                        map[end->X][end->Y].end_t = STAY_TIME;
                         return m_openVec[i];
+                    }
+
                 }
             }
             start_time = start_time + NODE_TIME;
+
         }
+        map[end->X][end->Y].start_t = start_time;
+        map[end->X][end->Y].end_t = STAY_TIME;
+
         return end;
     }
 
 private:
-    // int m_array[1000][1000];
     vector< vector<NODE> > m_map;
     static const int STEP = 10;
     static const int OBLIQUE = 14;
@@ -415,14 +427,13 @@ int main()
             cout << "AGV:"<< k 
                  << "(" << point->Y << "," << point->X << ");" << "//";
             map[point->X][point->Y].agv = k;
-            map[point->X][point->Y].start_t = start_time;
-            map[point->X][point->Y].end_t = start_time+ NODE_TIME;
+            // map[point->X][point->Y].start_t = start_time;
+            // map[point->X][point->Y].end_t = start_time+ NODE_TIME;
 
             cout << "time:"
                  << "(" << map[point->X][point->Y].start_t << "," << map[point->X][point->Y].end_t << ");" << endl;
             point = point->m_parentPoint;
             num_node++;
-            start_time = start_time+ NODE_TIME;
         }
     }
 
