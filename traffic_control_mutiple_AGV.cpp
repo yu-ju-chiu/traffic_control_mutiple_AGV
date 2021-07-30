@@ -4,6 +4,7 @@
 #include <fstream>
 #include <math.h>
 #include <time.h>
+#include <time.h>
 
 #define METHOD 1
 
@@ -73,15 +74,15 @@ class NODE{
 class CPoint
 {
 public:
-    CPoint(int x, int y) : X(x), Y(y), G(0), H(0), F(0),T(0),n_start_t(0),n_end_t(0), m_parentPoint(NULL){};
+    CPoint(int x, int y) : X(x), Y(y), G(0), H(0), F(0),T(0),n_start_t(-1),n_end_t(-1), m_parentPoint(NULL){};
     ~CPoint(){};
     void CalcF()
     {
         F = G + H + T;
-        cout << "F: " << F << endl;
-        cout << "G: " << G << endl;
-        cout << "H: " << H << endl;
-        cout << "T: " << T << endl;
+        // cout << "F: " << F << endl;
+        // cout << "G: " << G << endl;
+        // cout << "H: " << H << endl;
+        // cout << "T: " << T << endl;
     }
     int X;
     int Y;
@@ -247,8 +248,8 @@ public:
         {
             T = 9999;
         }
-        cout << "CalcT_point_start: " <<"("<< point->X <<","<< point->Y<<")"<< point->n_start_t << endl;
-        cout << "CalcT_map_start: " <<"("<< point->X <<","<< point->Y<<")"<< map[point->X][point->Y].start_t << endl;
+        // cout << "CalcT_point_start: " <<"("<< point->X <<","<< point->Y<<")"<< point->n_start_t << endl;
+        // cout << "CalcT_map_start: " <<"("<< point->X <<","<< point->Y<<")"<< map[point->X][point->Y].start_t << endl;
         return T;
     }
     int CalcH(CPoint *end, CPoint *point)
@@ -265,11 +266,20 @@ public:
         while (0 != m_openVec.size())
         {
             CPoint *tmpStart = GetMinFPoint(); // 取F最小值
+            // cout<<"F cor: "<<tmpStart->X<<","<<tmpStart->Y<<endl;
+            // cout<<"F the smallest"<<tmpStart->F<<endl;
 
             RemoveFromOpenVec(tmpStart);
             m_closeVec.push_back(tmpStart);
+            if (tmpStart->n_start_t != -1)
+            {
+                start_time = tmpStart->n_start_t;
+            }
+            
             map[tmpStart->X][tmpStart->Y].start_t = start_time;
             map[tmpStart->X][tmpStart->Y].end_t = start_time + NODE_TIME;
+
+
             POINTVEC adjacentPoints = GetAdjacentPoints(tmpStart, isIgnoreCorner);
             for (POINTVEC::iterator it = adjacentPoints.begin(); it != adjacentPoints.end(); ++it)
             {
@@ -329,10 +339,21 @@ int main()
     int Y = 0;
     string filename{"factory_map.txt"};
     double start_t, end_t;
+
+    //right now time
+    time_t timep; 
+    time (&timep); 
+    printf("%s",ctime(&timep)); 
+    //open csv
+    std::ofstream myfile;
+    myfile.open ("path.csv");
+    myfile << ctime(&timep);
+    myfile << "\n";
+    
+
     X = getFilecol(filename);
     Y = getFilerow(filename);
-    cout << "X" << X << endl;
-    cout << "Y" << Y << endl;
+    cout << "map size (X,Y):" <<"("<< X <<","<<Y<<")"<< endl;
 
     int array[1000][1000]{};
     //input the file
@@ -393,16 +414,19 @@ int main()
     int start_time = 0;
     int wait_time = 0;
 
+    myfile << "AGV_path; ;AGV_time \n";
+
     for(int k = 1 ; k<=num;k++)
     {
         cout << "enter AGV"<<k<<"start X" << endl;
-        cin >> ex_1;
-        cout << "enter AGV"<<k<<"start Y" << endl;
-        cin >> ey_1;
-        cout << "enter AGV"<<k<<"end X" << endl;
         cin >> sx_1;
-        cout << "enter AGV"<<k<<"end Y" << endl;
+        cout << "enter AGV"<<k<<"start Y" << endl;
         cin >> sy_1;
+        cout << "enter AGV"<<k<<"end X" << endl;
+        cin >> ex_1;
+        cout << "enter AGV"<<k<<"end Y" << endl;
+        cin >> ey_1;
+        myfile << "AGV_"<<k<<"\n";
         if (k>1)
         {
             start_time = 0 + wait_time;
@@ -426,15 +450,16 @@ int main()
         {
             cout << "AGV:"<< k 
                  << "(" << point->Y << "," << point->X << ");" << "//";
+            
             map[point->X][point->Y].agv = k;
-            // map[point->X][point->Y].start_t = start_time;
-            // map[point->X][point->Y].end_t = start_time+ NODE_TIME;
-
             cout << "time:"
                  << "(" << map[point->X][point->Y].start_t << "," << map[point->X][point->Y].end_t << ");" << endl;
+            myfile <<point->Y<<";"<<point->X<<";"<<map[point->X][point->Y].start_t<<";"<< map[point->X][point->Y].end_t<<"\n";
             point = point->m_parentPoint;
             num_node++;
         }
+        map[ey_1][ex_1].agv = -2;
+        map[sy_1][sx_1].agv = -1;
     }
 
     for (int i = 0; i < Y; i++)
@@ -443,13 +468,19 @@ int main()
         {
             if (map[i][j].mark == 1)
                 cout << "X";
-            else if (map[i][j].agv != NULL)
+            else if (map[i][j].agv == -2)
+                cout << "E";
+            else if (map[i][j].agv == -1)
+                cout << "S";
+            else if (map[i][j].agv != 0)
                 cout << map[i][j].agv;
             else
                 cout << " ";
         }
         cout << endl;
     }
-    system("pause");
+
+    myfile.close();
+    // system("pause");
     return 0;
 }
